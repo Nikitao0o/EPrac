@@ -3,6 +3,8 @@ services:
     build:
       context: ./backend
     container_name: eprac-backend
+    env_file:
+      - .env
     environment:
       ELASTICSEARCH_URL: ${ELASTICSEARCH_URL:-http://elasticsearch:9200}
       DATABASE_URL: ${DATABASE_URL:-postgresql://eprac:eprac_password@postgres:5432/eprac}
