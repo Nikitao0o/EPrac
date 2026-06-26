@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 from app.api.upload import router as upload_router
 from app.services.es_client import create_index_if_not_exists, es
 
@@ -38,6 +39,9 @@ app.add_middleware(
 
 # подключаем роутер
 app.include_router(upload_router, prefix="/api/v1", tags=["Documents"])
+
+# Prometheus metrics endpoint: /metrics
+Instrumentator().instrument(app).expose(app, include_in_schema=False)
 
 
 # тестовый эндпоинт

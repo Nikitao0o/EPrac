@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: EPrac
+    orgId: 1
+    folder: EPrac
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
