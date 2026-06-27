@@ -1,4 +1,6 @@
+import uuid
 from elasticsearch import AsyncElasticsearch
+from elasticsearch.helpers import async_bulk
 from app.core.config import ELASTICSEARCH_URL
 
 # асинхронный клиент для работы с базой
@@ -17,7 +19,7 @@ async def create_index_if_not_exists():
                 "page_number": {"type": "integer"},
                 "text": {
                     "type": "text",
-                    "analyzer": "russian"  # русскоязычный анализатор
+                    "analyzer": "russian"
                 }
             }
         }
@@ -34,3 +36,27 @@ async def create_index_if_not_exists():
             print(f"Индекс '{INDEX_NAME}' уже существует. Пропускаем создание.")
     except Exception as e:
         print(f"ВНИМАНИЕ: Не удалось подключиться к Elasticsearch. Ошибка: {e}")
+
+
+async def index_chunks(chunks: list[dict], file_name: str) -> None:
+    # функция для массовой загрузки чанков в Elasticsearch
+    actions = []
+    for chunk in chunks:
+        action = {
+            "_index": INDEX_NAME,
+            "_id": str(uuid.uuid4()),  # уникальный ID для каждого документа в ES
+            "_source": {
+                "chunk_id": str(uuid.uuid4()),
+                "file_name": file_name,
+                "page_number": chunk["page_number"],
+                "text": chunk["text"]
+            }
+        }
+        actions.append(action)
+
+    try:
+        # используем async_bulk для быстрой вставки всех чанков разом
+        await async_bulk(es, actions)
+    except Exception as e:
+        print(f"Ошибка при индексации в Elasticsearch: {e}")
+        raise e
