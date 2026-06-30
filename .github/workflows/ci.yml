@@ -8,59 +8,53 @@ on:
 
 jobs:
   backend:
-    name: Backend lint, tests and build
+    name: Проверка, тесты и сборка бэкенда
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Получение кода
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Настройка Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
+      - name: Установка зависимостей
         working-directory: backend
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install ruff pytest
+          pip install -r requirements-dev.txt
 
-      - name: Lint
-        run: ruff check backend/app
+      - name: Проверка стиля
+        run: ruff check backend/app backend/tests
 
-      - name: Tests
-        run: |
-          if find . -path '*/tests/test_*.py' -o -path '*/test_*.py' | grep -q .; then
-            pytest
-          else
-            python -m compileall backend/app
-          fi
+      - name: Тесты
+        run: pytest --cov=backend/app --cov-report=term-missing --cov-fail-under=50
 
-      - name: Build backend image
+      - name: Сборка образа бэкенда
         run: docker build -t eprac-backend:ci backend
 
   frontend:
-    name: Frontend build
+    name: Сборка фронтенда
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Получение кода
         uses: actions/checkout@v4
 
-      - name: Build frontend image
+      - name: Сборка образа фронтенда
         run: docker build -t eprac-frontend:ci frontend
 
   compose:
-    name: Compose config
+    name: Проверка конфигурации Compose
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Получение кода
         uses: actions/checkout@v4
 
-      - name: Validate docker compose
+      - name: Проверка docker compose
         run: |
           cp .env.example .env
           docker compose --env-file .env.example config --quiet
