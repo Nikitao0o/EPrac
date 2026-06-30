@@ -10,7 +10,7 @@ INDEX_NAME = "documents"
 
 
 async def create_index_if_not_exists():
-    # описание структуры индекса (Требование BE-06)
+    # описание структуры индекса
     mapping = {
         "mappings": {
             "properties": {
@@ -59,10 +59,9 @@ async def index_chunks(chunks: list[dict], file_name: str) -> None:
         raise e
 
 
-async def search_chunks(query: str, file_name: str = None, limit: int = 10) -> list[dict]:
-    # полнотекстовый поиск по чанкам с оптимизацией через фильтры
+async def search_chunks(query: str, file_name: str = None, limit: int = 10, offset: int = 0) -> dict:
+    # полнотекстовый поиск с фильтрами и пагинацией
 
-    # базовая структура запроса с полнотекстовым поиском multi_match
     search_query = {
         "multi_match": {
             "query": query,
@@ -70,7 +69,6 @@ async def search_chunks(query: str, file_name: str = None, limit: int = 10) -> l
         }
     }
 
-    # если передан file_name, оборачиваем наш запрос в bool/filter для оптимизации
     if file_name:
         body_query = {
             "bool": {
@@ -83,15 +81,20 @@ async def search_chunks(query: str, file_name: str = None, limit: int = 10) -> l
     else:
         body_query = search_query
 
+    # from для смещения (offset)
     body = {
+        "from": offset,
         "size": limit,
         "query": body_query
     }
 
     try:
         response = await es.search(index=INDEX_NAME, body=body)
-        results = []
 
+        # общее количество совпадений
+        total_hits = response["hits"]["total"]["value"]
+
+        results = []
         for hit in response["hits"]["hits"]:
             source = hit["_source"]
             results.append({
@@ -102,10 +105,14 @@ async def search_chunks(query: str, file_name: str = None, limit: int = 10) -> l
                 "score": hit["_score"]
             })
 
-        return results
+        # возвращаем словарь с общим числом и массивом данных
+        return {
+            "total": total_hits,
+            "items": results
+        }
     except Exception as e:
         print(f"Ошибка при выполнении поиска: {e}")
-        return []
+        return {"total": 0, "items": []}
 
 
 async def get_uploaded_documents() -> list[dict]:
