@@ -59,16 +59,33 @@ async def index_chunks(chunks: list[dict], file_name: str) -> None:
         raise e
 
 
-async def search_chunks(query: str, limit: int = 10) -> list[dict]:
-    # полнотекстовый поиск по чанкам (BE-08 и BE-09)
-    body = {
-        "size": limit,
-        "query": {
-            "multi_match": {
-                "query": query,
-                "fields": ["text", "file_name"]
+async def search_chunks(query: str, file_name: str = None, limit: int = 10) -> list[dict]:
+    # полнотекстовый поиск по чанкам с оптимизацией через фильтры
+
+    # базовая структура запроса с полнотекстовым поиском multi_match
+    search_query = {
+        "multi_match": {
+            "query": query,
+            "fields": ["text", "file_name"]
+        }
+    }
+
+    # если передан file_name, оборачиваем наш запрос в bool/filter для оптимизации
+    if file_name:
+        body_query = {
+            "bool": {
+                "must": search_query,
+                "filter": [
+                    {"term": {"file_name": file_name}}
+                ]
             }
         }
+    else:
+        body_query = search_query
+
+    body = {
+        "size": limit,
+        "query": body_query
     }
 
     try:
