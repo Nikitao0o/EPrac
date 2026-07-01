@@ -23,7 +23,32 @@ def upload_file(filename: str, content: bytes, content_type: str):
     )
 
 
-def test_upload_valid_pdf_returns_document_metadata():
+def stub_successful_processing(monkeypatch):
+    monkeypatch.setattr(
+        upload_module,
+        "extract_text_from_pdf",
+        lambda _: [{"page_number": 1, "text": "Тестовая лекция PDF"}],
+    )
+    monkeypatch.setattr(
+        upload_module,
+        "extract_text_from_docx",
+        lambda _: [{"page_number": 1, "text": "Тестовая лекция DOCX"}],
+    )
+    monkeypatch.setattr(
+        upload_module,
+        "chunk_text",
+        lambda *_args, **_kwargs: [{"page_number": 1, "text": "Тестовый чанк"}],
+    )
+
+    async def fake_index_chunks(_chunks, _filename):
+        return None
+
+    monkeypatch.setattr(upload_module, "index_chunks", fake_index_chunks)
+
+
+def test_upload_valid_pdf_returns_document_metadata(monkeypatch):
+    stub_successful_processing(monkeypatch)
+
     response = upload_file(
         "lecture.pdf",
         b"%PDF-1.4\n% test pdf content\n",
@@ -35,9 +60,12 @@ def test_upload_valid_pdf_returns_document_metadata():
     assert UUID_PATTERN.match(body["document_id"])
     assert body["filename"] == "lecture.pdf"
     assert body["size_bytes"] == 28
+    assert body["total_chunks_indexed"] == 1
 
 
-def test_upload_valid_docx_returns_document_metadata():
+def test_upload_valid_docx_returns_document_metadata(monkeypatch):
+    stub_successful_processing(monkeypatch)
+
     response = upload_file(
         "lecture.docx",
         b"PK\x03\x04 test docx content",
@@ -48,6 +76,7 @@ def test_upload_valid_docx_returns_document_metadata():
     body = response.json()
     assert UUID_PATTERN.match(body["document_id"])
     assert body["filename"] == "lecture.docx"
+    assert body["total_chunks_indexed"] == 1
 
 
 def test_upload_rejects_unsupported_extension():
