@@ -60,7 +60,7 @@ export function SearchPage() {
             <h2>Поиск по документам</h2>
             <p className="panel__hint">
               {isSearchMockEnabled()
-                ? 'Сейчас используются mock-данные. Когда backend добавит GET /api/v1/search, установите VITE_SEARCH_MOCK=false.'
+                ? 'Используются mock-данные. Для интеграции с backend установите VITE_SEARCH_MOCK=false.'
                 : 'Запросы отправляются на GET /api/v1/search.'}
             </p>
           </div>

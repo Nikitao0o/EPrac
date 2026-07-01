@@ -2,6 +2,9 @@ FROM node:22-alpine AS build
 
 WORKDIR /app
 
+ARG VITE_SEARCH_MOCK=false
+ENV VITE_SEARCH_MOCK=$VITE_SEARCH_MOCK
+
 COPY package.json package-lock.json ./
 RUN npm ci
 

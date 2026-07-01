@@ -28,6 +28,8 @@ services:
   front:
     build:
       context: ./frontend
+      args:
+        VITE_SEARCH_MOCK: ${VITE_SEARCH_MOCK:-false}
     container_name: eprac-frontend
     ports:
       - "${FRONTEND_HOST_PORT:-8080}:80"
