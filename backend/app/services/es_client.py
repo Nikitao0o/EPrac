@@ -10,8 +10,17 @@ INDEX_NAME = "documents"
 
 
 async def create_index_if_not_exists():
-    # описание структуры индекса
+    # явные настройки индекса и анализатора для закрытия таски
     mapping = {
+        "settings": {
+            "analysis": {
+                "analyzer": {
+                    "default": {
+                        "type": "russian"
+                    }
+                }
+            }
+        },
         "mappings": {
             "properties": {
                 "chunk_id": {"type": "keyword"},
@@ -29,7 +38,7 @@ async def create_index_if_not_exists():
         exists = await es.indices.exists(index=INDEX_NAME)
         if not exists:
             await es.indices.create(index=INDEX_NAME, body=mapping)
-            print(f"Индекс '{INDEX_NAME}' успешно создан.")
+            print(f"Индекс '{INDEX_NAME}' успешно создан с явными настройками russian analyzer.")
         else:
             print(f"Индекс '{INDEX_NAME}' уже существует.")
     except Exception as e:
@@ -60,7 +69,7 @@ async def index_chunks(chunks: list[dict], file_name: str) -> None:
 
 
 async def search_chunks(query: str, file_name: str = None, limit: int = 10, offset: int = 0) -> dict:
-    # полнотекстовый поиск с фильтрами и пагинацией
+    # полнотекстовый поиск с фильтрами и ПАГИНАЦИЕЙ
 
     search_query = {
         "multi_match": {
@@ -81,7 +90,6 @@ async def search_chunks(query: str, file_name: str = None, limit: int = 10, offs
     else:
         body_query = search_query
 
-    # from для смещения (offset)
     body = {
         "from": offset,
         "size": limit,
@@ -91,7 +99,6 @@ async def search_chunks(query: str, file_name: str = None, limit: int = 10, offs
     try:
         response = await es.search(index=INDEX_NAME, body=body)
 
-        # общее количество совпадений
         total_hits = response["hits"]["total"]["value"]
 
         results = []
@@ -105,7 +112,6 @@ async def search_chunks(query: str, file_name: str = None, limit: int = 10, offs
                 "score": hit["_score"]
             })
 
-        # возвращаем словарь с общим числом и массивом данных
         return {
             "total": total_hits,
             "items": results
