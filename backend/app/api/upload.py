@@ -67,7 +67,7 @@ async def upload_document(file: UploadFile = File(...)):
     # индексация в Elasticsearch (BE-07)
     try:
         await index_chunks(chunks, filename)
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Ошибка при сохранении данных в поисковый индекс Elasticsearch."
